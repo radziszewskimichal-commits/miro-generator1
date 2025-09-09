@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interaktywny Przewodnik po Ciemnogrodzie</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: Aplikacja została zaprojektowana jako pulpit nawigacyjny z trzema głównymi sekcjami (Przegląd, Lokacje, Wizualizacje), aby zapewnić intuicyjną nawigację. Użytkownik może łatwo przełączać się między ogólnymi informacjami, szczegółową, filtrowalną listą lokacji i postaci, a graficznym podsumowaniem danych. Interaktywna lista lokacji z wyszukiwarką i filtrami oraz wyskakujące okna modalne ze szczegółami pozwalają na szybki dostęp do informacji bez przeładowywania strony, co jest kluczowe dla Mistrza Gry podczas sesji. Taka struktura ułatwia syntezę informacji i wspiera dynamiczne prowadzenie rozgrywki. -->
+    <!-- Visualization & Content Choices: Informacje ogólne, historia i legenda są przedstawione w formie tekstowej dla zachowania kontekstu fabularnego. Kluczowe dane ilościowe i jakościowe (stan lokacji, rentowność, cele i środki BN-ów) zostały zwizualizowane za pomocą wykresów kołowych i słupkowych (Chart.js), aby umożliwić szybką analizę i zrozumienie dynamiki miasta. Interaktywna siatka kart z filtrami pozwala na eksplorację i porównywanie lokacji i postaci, co jest bardziej użyteczne niż statyczna lista. Wybór ten wspiera główny cel aplikacji: ułatwienie zarządzania złożonym środowiskiem gry. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f5f5f4; /* stone-100 */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .nav-active {
+            border-bottom: 2px solid #a16207; /* yellow-700 */
+            color: #a16207;
+            font-weight: 500;
+        }
+        .modal {
+            transition: opacity 0.25s ease;
+        }
+    </style>
+</head>
+<body class="text-stone-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-stone-900">Ciemnogród</h1>
+            <p class="text-lg text-stone-600 mt-2">Interaktywny przewodnik po mieście</p>
+        </header>
+
+        <nav class="flex justify-center border-b border-stone-300 mb-8">
+            <button class="nav-button py-4 px-6 text-stone-600 hover:text-yellow-700 nav-active" data-section="overview-section">Przegląd</button>
+            <button class="nav-button py-4 px-6 text-stone-600 hover:text-yellow-700" data-section="locations-section">Lokacje i Mieszkańcy</button>
+            <button class="nav-button py-4 px-6 text-stone-600 hover:text-yellow-700" data-section="visualizations-section">Wizualizacje</button>
+        </nav>
+
+        <main>
+            <!-- Sekcja: Przegląd -->
+            <section id="overview-section" class="content-section">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-lg shadow-md lg:col-span-2">
+                        <h2 class="text-2xl font-bold mb-4 text-yellow-800">Opis Miasta</h2>
+                        <p class="text-stone-700 leading-relaxed">Ciemnogród to miasto wielu oblicz, gdzie monumentalne świątynie i domy arystokracji rzucają cień na zrujnowane dzielnice i zaniedbane zaułki. Historia miasta jest zapisana w kamieniu i duszy jego mieszkańców, noszących ślady dawnych tragedii i nieufności wobec obcych. Pomimo widocznych podziałów, miasto pulsuje życiem — hałas z kuźni miesza się z gwarem targowisk, a z karczm dobiegają głośne rozmowy. To miejsce, gdzie przeszłość wciąż kształtuje teraźniejszość, a cienie dawnych konfliktów wciąż czają się w zakamarkach.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h2 class="text-2xl font-bold mb-4 text-yellow-800">Informacje Ogólne</h2>
+                        <ul class="space-y-2 text-stone-700">
+                            <li><strong>Typ:</strong> Miasto</li>
+                            <li><strong>Rozmiar:</strong> 32 lokacje</li>
+                            <li><strong>Populacja:</strong> ~400-600 mieszkańców</li>
+                            <li><strong>Problem:</strong> Ambicje możnych i niewyjaśnione zniknięcie</li>
+                            <li><strong>Osobliwość:</strong> Napięcia etniczne (nieufność wobec elfów)</li>
+                            <li><strong>Rząd:</strong> Arystokratyczny</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md lg:col-span-3">
+                        <h2 class="text-2xl font-bold mb-4 text-yellow-800">Historia i Obecna Sytuacja</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h3 class="text-xl font-semibold mb-2">Kluczowe Wydarzenia</h3>
+                                <ul class="list-disc list-inside space-y-2 text-stone-700">
+                                    <li><strong class="text-stone-800">~200 lat temu:</strong> Budowa świątyni i konflikt z elfami.</li>
+                                    <li><strong class="text-stone-800">~120 lat temu:</strong> Zniknięcie obywatela podczas wizyty awanturników.</li>
+                                    <li><strong class="text-stone-800">~50 lat temu:</strong> Nieudane rządy arystokraty prowadzące do kryzysu.</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-semibold mb-2">Sytuacja Obecna</h3>
+                                <p class="text-stone-700">Miasto jest głęboko podzielone społecznie i ekonomicznie. Straż miejska jest skorumpowana, a mieszkańcy żyją w strachu przed powrotem dawnych zagrożeń, podsycając atmosferę nieufności.</p>
+                            </div>
+                        </div>
+                    </div>
+                     <div class="bg-white p-6 rounded-lg shadow-md lg:col-span-3">
+                        <h2 class="text-2xl font-bold mb-4 text-yellow-800">Legenda Miasta</h2>
+                        <p class="text-stone-700 leading-relaxed">Przed wiekami, gdy Mgła Krwi opadła, w mieście pojawił się bohater, który miał zniknąć w tajemniczych okolicznościach. Starsi twierdzą, że został uprowadzony przez potwory, inni – że zdradził mieszkańców. W miejscu, gdzie po raz ostatni go widziano, wzniesiono posąg z czarnego kamienia. Legenda mówi, że gdy cień posągu zakryje świątynię, dawny bohater powróci – by albo ocalić miasto, albo dokończyć swoją zdradę.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sekcja: Lokacje i Mieszkańcy -->
+            <section id="locations-section" class="content-section hidden">
+                <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                     <h2 class="text-2xl font-bold mb-4 text-yellow-800">Eksploruj Ciemnogród</h2>
+                     <p class="text-stone-600 mb-4">Użyj filtrów, aby przeglądać lokacje i mieszkańców Ciemnogrodu. Kliknij na kartę, aby zobaczyć szczegółowe informacje.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <input type="text" id="searchInput" placeholder="Szukaj po nazwie, profesji..." class="w-full p-2 border border-stone-300 rounded-md focus:ring-2 focus:ring-yellow-600 focus:border-transparent">
+                        <select id="conditionFilter" class="w-full p-2 border border-stone-300 rounded-md focus:ring-2 focus:ring-yellow-600 focus:border-transparent">
+                            <option value="">Filtruj po stanie...</option>
+                        </select>
+                        <select id="profitabilityFilter" class="w-full p-2 border border-stone-300 rounded-md focus:ring-2 focus:ring-yellow-600 focus:border-transparent">
+                            <option value="">Filtruj po rentowności...</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="locationsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                </div>
+            </section>
+
+            <!-- Sekcja: Wizualizacje -->
+            <section id="visualizations-section" class="content-section hidden">
+                 <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                     <h2 class="text-2xl font-bold mb-4 text-yellow-800">Ciemnogród w Liczbach</h2>
+                     <p class="text-stone-600">Poniższe wykresy przedstawiają kluczowe aspekty społeczne i ekonomiczne miasta, oferując szybki wgląd w jego wewnętrzną dynamikę. Analiza tych danych może pomóc w zrozumieniu, co napędza mieszkańców i jakie siły kształtują Ciemnogród.</p>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-semibold text-center mb-4">Stan Lokacji</h3>
+                        <div class="chart-container"><canvas id="conditionChart"></canvas></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-semibold text-center mb-4">Rentowność Lokacji</h3>
+                        <div class="chart-container"><canvas id="profitabilityChart"></canvas></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-semibold text-center mb-4">Główne Cele Mieszkańców</h3>
+                        <div class="chart-container"><canvas id="objectivesChart"></canvas></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-semibold text-center mb-4">Preferowane Środki Działania</h3>
+                        <div class="chart-container"><canvas id="meansChart"></canvas></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="modal fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center p-4 z-50 opacity-0">
+        <div id="modal-content" class="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        </div>
+    </div>
+
+    <script>
+        const cityData = [
+            { id: 1, location: "Strażnica", condition: "W kiepskim stanie", profitability: "Wymierająca", npc: { profession: "Strażnik", appearance: "Jego mundur, choć niegdyś czysty, jest teraz pokryty plamami i brudem. Zawsze zgarbiony i skulony, unika kontaktu wzrokowego. Jego twarz, o szarym odcieniu, jest wiecznie pokryta kurzem, a włosy posklejane brudem i potem. Mówi niewyraźnie, często mamrocze pod nosem.", personality: "Skryty i nieufny.", means: "Zna wpływy społeczne.", objective: "Zdobycie bogactwa", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Walka Wręcz 2, Wyczerpanie 1, Spostrzegawczość 1", narrative: "Ten strażnik to cień dawnego siebie. Jest skorumpowany i służy potężnym możnym w mieście, ale w głębi duszy pragnie tylko uciec od swojego losu i zyskać bogactwo, które pozwoli mu na wolność." } },
+            { id: 2, location: "Dom pisarza", condition: "Doskonały stan", profitability: "Niesamowita", npc: { profession: "Pisarz", appearance: "Ma drobną budowę ciała i łagodny uśmiech, ale jego twarz jest pokryta licznymi bliznami. Zawsze nosi proste, ale schludne ubrania i ma przy sobie zwoje papieru oraz pióro.", personality: "Życzliwy i pomocny.", means: "Przemoc", objective: "Osiągnięcie spokoju", attributes: "Siła 2, Zręczność 2, Spryt 5, Empatia 3", skills: "Wiedza 4, Leczenie 3, Przetrwanie 2", narrative: "Pisarz spędza całe dnie na czytaniu i pisaniu, starając się zapomnieć o swojej przeszłości. Jest bardzo życzliwy i pomocny, ale w jego oczach widać zmęczenie. Może opowiedzieć o historii miasta i jego problemach." } },
+            { id: 3, location: "Kuźnia", condition: "Dobrze utrzymana", profitability: "Niesamowita", npc: { profession: "Kowal", appearance: "Wysoki i chudy, z wiecznie pogodnym wyrazem twarzy. Mimo swej postury, jest bardzo silny. Ma szeroki, szczery uśmiech, a jego ręce są pokryte modzelami od ciężkiej pracy.", personality: "Pogodny, spokojny.", means: "Zna wpływy społeczne.", objective: "Osiągnięcie spokoju", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Rzemiosło 3, Walka Wręcz 2, Zręczność 1", narrative: "Ten kowal jest bardzo utalentowany, a jego praca jest doceniana. Jest pogodny i spokojny, ale w jego oczach widać zmęczenie. Może opowiedzieć o swoich problemach i poprosić o pomoc." } },
+            { id: 4, location: "Tkacz", condition: "W kiepskim stanie", profitability: "Skąpa", npc: { profession: "Tkacz", appearance: "Zawsze brudny, w jego ubraniu widać plamy i dziury. Ma zgarbione plecy od ciągłego siedzenia przy krośnie. Ma skryty charakter, unika rozmów. Mówi cicho i nieśmiało.", personality: "Skryty i nieufny.", means: "Manipulacja", objective: "Ochrona rodziny", attributes: "Siła 2, Zręczność 3, Spryt 3, Empatia 3", skills: "Wiedza 2, Zręczność 1, Walka Wręcz 1", narrative: "Tkacz jest bardzo skryty i nieufny wobec obcych. Ma zrujnowany warsztat i ledwo wiąże koniec z końcem, ale jest gotów zrobić wszystko, aby chronić swoją rodzinę. Może poprosić o pomoc." } },
+            { id: 5, location: "Kaplica", condition: "Doskonały stan", profitability: "Niesamowita", npc: { profession: "Kapłan", appearance: "Nosi drogie, jedwabne szaty. Ma arogancki wyraz twarzy i zawsze patrzy na innych z góry. Jego włosy są zawsze idealnie ułożone, a ręce są zawsze czyste. Mówi głośno i wyraźnie, z przesadną pewnością siebie.", personality: "Arogancki i porywczy.", means: "Manipulacja", objective: "Zemsta", attributes: "Siła 2, Zręczność 2, Spryt 4, Empatia 3", skills: "Wiedza 3, Leczenie 2, Walka Wręcz 1", narrative: "Ten kapłan jest arogancki i porywczy. Wierzy, że ma misję ukarania wszystkich, którzy sprzeciwiali się budowie świątyni. Może zaoferować misje związane z jego zemstą." } },
+            { id: 6, location: "Rzeźnik", condition: "W kiepskim stanie", profitability: "Skąpa", npc: { profession: "Rzeźnik", appearance: "Wysoki i chudy. Jego twarz jest zawsze brudna, a oczy spoglądają na świat z podejrzliwością. Jego włosy są posklejane krwią, a jego ubrania są podarte. Mówi w sposób skryty, ale z nutą cynizmu.", personality: "Skryty, cyniczny.", means: "Zna wpływy społeczne.", objective: "Ochrona rodziny", attributes: "Siła 4, Zręczność 2, Spryt 2, Empatia 3", skills: "Walka Wręcz 3, Wiedza 2, Zręczność 1", narrative: "Ten rzeźnik jest bardzo skryty i nieufny wobec obcych. Jest gotów zrobić wszystko, aby chronić swoją rodzinę. Może opowiedzieć o swoich problemach i poprosić o pomoc." } },
+            { id: 7, location: "Cmentarz", condition: "Dobrze utrzymana", profitability: "Zadowalająca", npc: { profession: "Grabarz", appearance: "Zawsze brudny, ma ubranie pokryte ziemią i kurzem. Ma arogancki wyraz twarzy, a jego oczy są puste i bez wyrazu. Mówi szorstkim, niskim głosem.", personality: "Arogancki i porywczy.", means: "Posiada wpływy polityczne", objective: "Służba bogom", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Wiedza 2, Zręczność 1, Walka Wręcz 1", narrative: "Grabarz jest arogancki i porywczy. Wierzy, że ma misję służenia bogom i ukarania wszystkich, którzy sprzeciwiają się jego wierze. Może zaoferować misje związane z jego zemstą." } },
+            { id: 8, location: "Chata zielarki", condition: "Bardzo dobry stan", profitability: "Obfita", npc: { profession: "Zielarka", appearance: "Wysoka i chuda. Jej twarz jest wyraża wieczny gniew, a jej oczy są pełne nienawiści. Jej włosy są potargane, a jej ubranie jest podarte. Mówi głośno i wyraźnie, z nutą złości.", personality: "Gniewna i agresywna.", means: "Przemoc", objective: "Zemsta", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Wiedza 2, Leczenie 1, Zręczność 1", narrative: "Ta zielarka jest bardzo gniewna i agresywna. Wierzy, że ma misję ukarania wszystkich, którzy sprzeciwiają się jej wierze. Może zaoferować misje związane z jej zemstą." } },
+            { id: 9, location: "Karczma", condition: "Doskonały stan", profitability: "Niesamowita", npc: { profession: "Karczmarz", appearance: "Ma dziwne oczy o różnych kolorach: jedno jest niebieskie, drugie zielone. Nosi drogie, ale brudne ubrania. Jego twarz jest wiecznie uśmiechnięta, ale jego oczy są zimne i puste. Mówi głośno i wyraźnie.", personality: "Arogancki i porywczy.", means: "Manipulacja", objective: "Zdobycie bogactwa", attributes: "Siła 2, Zręczność 2, Spryt 4, Empatia 3", skills: "Wiedza 3, Zręczność 2, Walka Wręcz 1", narrative: "Ten karczmarz jest arogancki i porywczy. Może oferować zadania związane ze zdobyciem bogactwa na różne, nie zawsze legalne sposoby." } },
+            { id: 10, location: "Garncarz", condition: "Zrujnowana", profitability: "Wymierająca", npc: { profession: "Garncarz", appearance: "Wysoki i chudy, o pobożnym wyrazie twarzy. Ma delikatne ręce, zawsze pokryte gliną. Mówi cichym, ale szczerym głosem.", personality: "Pobożny i spokojny.", means: "Manipulacja", objective: "Osiągnięcie spokoju", attributes: "Siła 2, Zręczność 3, Spryt 3, Empatia 3", skills: "Wiedza 2, Zręczność 1, Walka Wręcz 1", narrative: "Ten garncarz jest bardzo pobożny i spokojny. Pragnie tylko spokoju, by w ciszy tworzyć swoje dzieła, lecz jego warsztat chyli się ku upadkowi." } },
+            { id: 11, location: "Młyn", condition: "Zrujnowana", profitability: "Wymierająca", npc: { profession: "Młynarz", appearance: "Ma dziwne oczy. Zawsze nosi prostą, ale brudną tunikę. Mówi głośno i wyraźnie, z nutą arogancji.", personality: "Arogancki i porywczy.", means: "Stawia na ciężką pracę", objective: "Ochrona rodziny", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Walka Wręcz 2, Zręczność 1, Wiedza 1", narrative: "Ten młynarz jest arogancki i porywczy. Jego młyn popada w ruinę, a on sam obwinia o to wszystkich, tylko nie siebie." } },
+            { id: 12, location: "Magazyn", condition: "Zrujnowana", profitability: "Wymierająca", npc: { profession: "Magazynier", appearance: "Niski i krępy, o życzliwym wyrazie twarzy. Ma silne ręce, zawsze pokryte kurzem. Mówi głośno i wyraźnie.", personality: "Życzliwy, spokojny.", means: "Przemoc", objective: "Służba bogom", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Wiedza 2, Walka Wręcz 1, Zręczność 1", narrative: "Ten magazynier jest życzliwy i spokojny. Wierzy, że jego praca jest formą służby bogom i dba o powierzone mu towary z religijną gorliwością." } },
+            { id: 13, location: "Targ rybny", condition: "Doskonały stan", profitability: "Niesamowita", npc: { profession: "Rybak", appearance: "Nosi drogie, ale brudne ubrania. Ma gniewny wyraz twarzy, a jego oczy są pełne nienawiści. Mówi głośno i wyraźnie, z nutą złości.", personality: "Gniewny i agresywny.", means: "Manipulacja", objective: "Osiągnięcie spokoju", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Wiedza 2, Zręczność 1, Walka Wręcz 1", narrative: "Ten rybak jest bardzo gniewny i agresywny. Uważa, że inni rybacy kradną mu ryby i jest w ciągłym konflikcie z konkurencją." } },
+            { id: 14, location: "Dom artysty", condition: "Doskonały stan", profitability: "Niesamowita", npc: { profession: "Artysta", appearance: "Nosi drogie, jedwabne szaty. Ma pobożny wyraz twarzy. Jego ręce są zawsze czyste i delikatne. Mówi cichym, ale melodyjnym głosem.", personality: "Pobożny i spokojny.", means: "Przemoc", objective: "Ochrona rodziny", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Wiedza 2, Walka Wręcz 1, Zręczność 1", narrative: "Ten artysta jest bardzo pobożny i spokojny. Jego sztuka jest inspirowana wiarą, a on sam jest gotów bronić swojej rodziny i pracowni za wszelką cenę." } },
+            { id: 15, location: "Łaźnia", condition: "Dobrze utrzymana", profitability: "Obfita", npc: { profession: "Łaziennik", appearance: "Wysoki i chudy, o pobożnym wyrazie twarzy. Jego ciało jest czyste i zadbane. Mówi głośno i wyraźnie, z nutą pobożności.", personality: "Pobożny i spokojny.", means: "Manipulacja", objective: "Zdobycie władzy", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Wiedza 2, Walka Wręcz 1, Zręczność 1", narrative: "Ten łaziennik jest bardzo pobożny i spokojny. Uważa, że czystość ciała jest drogą do czystości duszy. Wykorzystuje swoją pozycję, by zdobywać wpływy." } },
+            { id: 16, location: "Piekarnia", condition: "Doskonały stan", profitability: "Niesamowita", npc: { name: "Marta", profession: "Piekarka", appearance: "Blizna na przedramieniu od poparzenia piecem, mocno zbudowana i krzepka. Jej włosy są zawsze upięte pod białą chustą, a ubranie przesiąknięte słodkim zapachem świeżo pieczonego chleba. Jej twarz jest szeroka, a usta często zaciśnięte, co zdradza porywczy charakter.", personality: "Zazwyczaj życzliwa i pomocna, ale jej temperament potrafi wybuchnąć bez ostrzeżenia.", means: "Przemoc", objective: "Służba bogom", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 3", skills: "Przetrwanie 4, Zręczność 3, Wiedza 2", narrative: "Marta jest znana w całym Ciemnogrodzie nie tylko ze swojego wyśmienitego chleba, ale także z wybuchowego temperamentu. Mówi się, że ma dar rozpoznawania „złego człowieka” i nigdy nie sprzedaje mu chleba, wierząc, że jej intuicja jest darem od bogów. Jej piec, w którym piecze chleb, nazywa 'sercem miasta'." } },
+            { id: 17, location: "Dom zielarza", condition: "Dobrze utrzymana", profitability: "Obfita", npc: { profession: "Zielarz", appearance: "Nosi drogie, ale brudne ubrania. Ma życzliwy wyraz twarzy. Jego ręce są zawsze pokryte ziemią. Mówi głośno i wyraźnie.", personality: "Życzliwy, ale porywczy.", means: "Przemoc", objective: "Zemsta", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Wiedza 2, Leczenie 1, Zręczność 1", narrative: "Ten zielarz jest bardzo życzliwy, ale porywczy, gdy ktoś podważa jego wiedzę. Skrycie pragnie zemsty na tych, którzy kiedyś go skrzywdzili." } },
+            { id: 18, location: "Dom rybaka", condition: "Doskonały stan", profitability: "Niesamowita", npc: { profession: "Rybak", appearance: "Ma blizny na twarzy. Jego twarz jest opalona. Ma życzliwy wyraz twarzy. Nosi prostą, ale czystą tunikę. Mówi cichym, ale szczerym głosem.", personality: "Życzliwy, spokojny.", means: "Posiada wpływy polityczne", objective: "Osiągnięcie spokoju", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Wiedza 2, Zręczność 1, Walka Wręcz 1", narrative: "Ten rybak jest bardzo życzliwy i spokojny. Dzięki swoim wpływom, zapewnia spokój nie tylko sobie, ale i innym rybakom w mieście." } },
+            { id: 19, location: "Ratusz", condition: "Bardzo dobry stan", profitability: "Obfita", npc: { profession: "Urzędnik", appearance: "Wysoki i chudy. Ma gniewny wyraz twarzy. Nosi drogie, jedwabne szaty. Mówi głośno i wyraźnie, z nutą arogancji.", personality: "Gniewny i agresywny.", means: "Posiada wpływy polityczne", objective: "Służba bogom", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Wiedza 2, Walka Wręcz 1, Zręczność 1", narrative: "Ten urzędnik jest bardzo gniewny i agresywny. Uważa, że jego praca jest służbą bogom, a każdy, kto mu się sprzeciwia, jest heretykiem." } },
+            { id: 20, location: "Dom kata", condition: "Bardzo dobry stan", profitability: "Obfita", npc: { profession: "Kat", appearance: "Zawsze brudny. Ma pogodny wyraz twarzy, ale jego oczy są zimne i puste. Nosi ciężki, skórzany fartuch. Mówi cichym, ale szczerym głosem.", personality: "Pogodny i spokojny.", means: "Zna wpływy społeczne.", objective: "Ochrona rodziny", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Wiedza 2, Walka Wręcz 1, Zręczność 1", narrative: "Ten kat jest pogodny i spokojny. Traktuje swoją pracę jak każde inne rzemiosło. Poza nią jest oddanym ojcem i mężem." } },
+            { id: 21, location: "Apteka", condition: "W kiepskim stanie", profitability: "Skąpa", npc: { profession: "Aptekarz", appearance: "Zawsze brudny. Ma pogodny wyraz twarzy. Nosi prostą, ale brudną tunikę. Mówi cichym, ale szczerym głosem.", personality: "Pogodny i spokojny.", means: "Przemoc", objective: "Ochrona rodziny", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Wiedza 2, Walka Wręcz 1, Zręczność 1", narrative: "Ten aptekarz jest pogodny i spokojny. Mimo kiepskich warunków, w jakich pracuje, stara się pomagać ludziom. Jest gotów bronić swojej apteki i rodziny." } },
+            { id: 22, location: "Świątynia", condition: "Średni stan", profitability: "Zadowalająca", npc: { profession: "Kapłan", appearance: "Wysoki i chudy. Ma życzliwy wyraz twarzy. Nosi proste, ale czyste ubrania. Mówi cichym, ale szczerym głosem.", personality: "Życzliwy, spokojny.", means: "Posiada wpływy polityczne", objective: "Służba bogom", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Wiedza 2, Leczenie 1, Zręczność 1", narrative: "Ten kapłan jest bardzo życzliwy i spokojny. Wierzy w siłę modlitwy i dyplomacji. Stara się łagodzić konflikty w mieście." } },
+            { id: 23, location: "Dom wodza", condition: "Bardzo dobry stan", profitability: "Obfita", npc: { profession: "Wódz", appearance: "Wysoki i chudy. Ma pogodny wyraz twarzy. Nosi proste, ale czyste ubrania. Mówi cichym, ale szczerym głosem.", personality: "Pogodny, spokojny.", means: "Przemoc", objective: "Osiągnięcie spokoju", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Wiedza 2, Walka Wręcz 1, Zręczność 1", narrative: "Ten wódz jest pogodny i spokojny. Jest weteranem wielu bitew i teraz pragnie tylko spokoju dla siebie i swoich ludzi." } },
+            { id: 24, location: "Dom kupca", condition: "Doskonały stan", profitability: "Niesamowita", npc: { profession: "Kupiec", appearance: "Wysoki i chudy. Ma skryty wyraz twarzy. Nosi drogie, ale brudne ubrania. Mówi cichym, ale szczerym głosem.", personality: "Skryty, nieufny.", means: "Przemoc", objective: "Ochrona rodziny", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Wiedza 2, Zręczność 1, Walka Wręcz 1", narrative: "Ten kupiec jest bardzo skryty i nieufny wobec obcych. Dorobił się fortuny, ale teraz boi się ją stracić. Jest gotów na wszystko, by chronić swój majątek i rodzinę." } },
+            { id: 25, location: "Posterunek straży", condition: "Doskonały stan", profitability: "Niesamowita", npc: { profession: "Strażnik", appearance: "Ma dziwne oczy. Ma skryty wyraz twarzy. Nosi prostą, ale czystą tunikę. Mówi cichym, ale szczerym głosem.", personality: "Skryty, nieufny.", means: "Stawia na ciężką pracę", objective: "Służba bogom", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Wiedza 2, Walka Wręcz 1, Zręczność 1", narrative: "Ten strażnik jest skryty i nieufny. Wierzy, że jego praca to służba bogom i wykonuje ją z żelazną dyscypliną." } },
+            { id: 26, location: "Warsztat rzemieślnika", condition: "Zrujnowana", profitability: "Wymierająca", npc: { profession: "Rzemieślnik", appearance: "Ma blizny na twarzy. Ma życzliwy wyraz twarzy. Nosi prostą, ale brudną tunikę. Mówi cichym, ale szczerym głosem.", personality: "Życzliwy, spokojny.", means: "Manipulacja", objective: "Zemsta", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Wiedza 2, Walka Wręcz 1, Zręczność 1", narrative: "Ten rzemieślnik jest życzliwy i spokojny. Jego warsztat popadł w ruinę po tym, jak został oszukany przez kupca. Teraz planuje zemstę." } },
+            { id: 27, location: "Plac targowy", condition: "Bardzo dobry stan", profitability: "Niesamowita", npc: { profession: "Kupiec", appearance: "Niski i krępy. Ma życzliwy wyraz twarzy. Nosi drogie, jedwabne szaty. Mówi cichym, ale szczerym głosem.", personality: "Życzliwy, spokojny.", means: "Posiada wpływy polityczne", objective: "Zdobycie bogactwa", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Wiedza 2, Zręczność 1, Walka Wręcz 1", narrative: "Ten kupiec jest życzliwy i spokojny. Wykorzystuje swoje wpływy polityczne do pomnażania bogactwa, ale dzieli się nim z biednymi." } },
+            { id: 28, location: "Kowal", condition: "Średni stan", profitability: "Zadowalająca", npc: { profession: "Kowal", appearance: "Ma dziwne oczy. Ma życzliwy wyraz twarzy. Nosi ciężki, skórzany fartuch. Mówi cichym, ale szczerym głosem.", personality: "Życzliwy, spokojny.", means: "Stawia na ciężką pracę", objective: "Zdobycie bogactwa", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Wiedza 2, Walka Wręcz 1, Zręczność 1", narrative: "Ten kowal jest życzliwy i spokojny. Wierzy w ciężką pracę i uczciwość. Marzy o zdobyciu bogactwa, by zapewnić lepsze życie swojej rodzinie." } },
+            { id: 29, location: "Browar", condition: "Zrujnowana", profitability: "Wymierająca", npc: { profession: "Browarnik", appearance: "Zawsze brudny. Ma arogancki wyraz twarzy. Nosi prostą, ale brudną tunikę. Mówi głośno i wyraźnie, z nutą arogancji.", personality: "Arogancki i porywczy.", means: "Zna wpływy społeczne.", objective: "Osiągnięcie spokoju", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Wiedza 2, Zręczność 1, Walka Wręcz 1", narrative: "Ten browarnik jest arogancki i porywczy. Jego browar upada, a on topi smutki w resztkach swojego piwa. Marzy o spokoju, którego nie potrafi znaleźć." } },
+            { id: 30, location: "Targ", condition: "Zrujnowana", profitability: "Wymierająca", npc: { profession: "Kupiec", appearance: "Wysoki i chudy. Ma pogodny wyraz twarzy. Nosi drogie, ale brudne ubrania. Mówi cichym, ale szczerym głosem.", personality: "Pogodny, spokojny.", means: "Zna wpływy społeczne.", objective: "Służba bogom", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Wiedza 2, Zręczność 1, Walka Wręcz 1", narrative: "Ten kupiec jest pogodny i spokojny. Stracił swój majątek, ale odnalazł wiarę. Teraz służy bogom, pomagając biednym na zrujnowanym targu." } },
+            { id: 31, location: "Stajnia", condition: "Zrujnowana", profitability: "Wymierająca", npc: { profession: "Stajenny", appearance: "Wysoki i chudy. Ma pogodny wyraz twarzy. Nosi prostą, ale brudną tunikę. Mówi cichym, ale szczerym głosem.", personality: "Pogodny, spokojny.", means: "Posiada wpływy polityczne", objective: "Zdobycie władzy", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Wiedza 2, Zręczność 1, Walka Wręcz 1", narrative: "Ten stajenny jest pogodny i spokojny. Zna sekrety wielu możnych, którzy zostawiają u niego konie. Wykorzystuje te informacje, by piąć się w górę." } },
+            { id: 32, location: "Chata znachora", condition: "W kiepskim stanie", profitability: "Skąpa", npc: { profession: "Znachor", appearance: "Zawsze brudny. Ma skryty wyraz twarzy. Nosi prostą, ale brudną tunikę. Mówi cichym, ale szczerym głosem.", personality: "Skryty, nieufny.", means: "Zna wpływy społeczne.", objective: "Zemsta", attributes: "Siła 3, Zręczność 2, Spryt 3, Empatia 2", skills: "Wiedza 2, Leczenie 1, Zręczność 1", narrative: "Ten znachor jest skryty i nieufny. Posiada wiedzę o ziołach i truciznach. Planuje zemstę na tych, którzy go skrzywdzili, a jego chata jest pełna niebezpiecznych mikstur." } },
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const locationsGrid = document.getElementById('locationsGrid');
+            const searchInput = document.getElementById('searchInput');
+            const conditionFilter = document.getElementById('conditionFilter');
+            const profitabilityFilter = document.getElementById('profitabilityFilter');
+            const navButtons = document.querySelectorAll('.nav-button');
+            const contentSections = document.querySelectorAll('.content-section');
+            const modal = document.getElementById('modal');
+            const modalContent = document.getElementById('modal-content');
+
+            const populateFilters = () => {
+                const conditions = [...new Set(cityData.map(item => item.condition))];
+                const profitabilities = [...new Set(cityData.map(item => item.profitability))];
+                conditions.forEach(c => conditionFilter.innerHTML += `<option value="${c}">${c}</option>`);
+                profitabilities.forEach(p => profitabilityFilter.innerHTML += `<option value="${p}">${p}</option>`);
+            };
+
+            const renderLocations = (data) => {
+                locationsGrid.innerHTML = '';
+                if (data.length === 0) {
+                    locationsGrid.innerHTML = `<p class="text-stone-500 col-span-full text-center">Brak wyników spełniających kryteria.</p>`;
+                    return;
+                }
+                data.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-white p-4 rounded-lg shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer';
+                    card.innerHTML = `
+                        <h3 class="text-lg font-bold text-yellow-800">${item.id}. ${item.location}</h3>
+                        <p class="text-stone-600">${item.npc.profession}</p>
+                        <div class="mt-2 text-sm">
+                            <span class="inline-block bg-stone-200 rounded-full px-3 py-1 text-xs font-semibold text-stone-700 mr-2 mb-2">Stan: ${item.condition}</span>
+                            <span class="inline-block bg-yellow-100 rounded-full px-3 py-1 text-xs font-semibold text-yellow-800 mr-2 mb-2">Rent.: ${item.profitability}</span>
+                        </div>
+                    `;
+                    card.addEventListener('click', () => showModal(item));
+                    locationsGrid.appendChild(card);
+                });
+            };
+            
+            const filterData = () => {
+                const searchTerm = searchInput.value.toLowerCase();
+                const selectedCondition = conditionFilter.value;
+                const selectedProfitability = profitabilityFilter.value;
+
+                const filtered = cityData.filter(item => {
+                    const name = item.npc.name ? item.npc.name.toLowerCase() : '';
+                    const searchMatch = item.location.toLowerCase().includes(searchTerm) || 
+                                        item.npc.profession.toLowerCase().includes(searchTerm) ||
+                                        name.includes(searchTerm);
+                    const conditionMatch = selectedCondition ? item.condition === selectedCondition : true;
+                    const profitabilityMatch = selectedProfitability ? item.profitability === selectedProfitability : true;
+                    return searchMatch && conditionMatch && profitabilityMatch;
+                });
+                renderLocations(filtered);
+            };
+
+            const showModal = (data) => {
+                modalContent.innerHTML = `
+                    <div class="p-6">
+                        <div class="flex justify-between items-start">
+                             <div>
+                                <h2 class="text-3xl font-bold text-stone-900">${data.location}</h2>
+                                <p class="text-lg text-yellow-800 font-medium">${data.npc.name ? `${data.npc.name} - ` : ''}${data.npc.profession}</p>
+                             </div>
+                             <button id="closeModal" class="text-3xl font-light leading-none text-stone-500 hover:text-stone-900">&times;</button>
+                        </div>
+                        <div class="mt-4 border-t border-stone-200 pt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h4 class="font-bold text-stone-800">Wygląd:</h4>
+                                <p class="text-stone-700">${data.npc.appearance}</p>
+                                <h4 class="font-bold text-stone-800 mt-4">Osobowość:</h4>
+                                <p class="text-stone-700">${data.npc.personality}</p>
+                            </div>
+                            <div>
+                                <div class="bg-stone-50 p-4 rounded-lg">
+                                    <h4 class="font-bold text-stone-800">Cel:</h4>
+                                    <p class="text-stone-700 mb-2">${data.npc.objective}</p>
+                                    <h4 class="font-bold text-stone-800">Środki działania:</h4>
+                                    <p class="text-stone-700 mb-2">${data.npc.means}</p>
+                                    <h4 class="font-bold text-stone-800">Atrybuty:</h4>
+                                    <p class="text-stone-700 mb-2">${data.npc.attributes}</p>
+                                    <h4 class="font-bold text-stone-800">Umiejętności:</h4>
+                                    <p class="text-stone-700">${data.npc.skills}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 border-t border-stone-200 pt-4">
+                            <h4 class="font-bold text-stone-800">Opis narracyjny:</h4>
+                            <p class="text-stone-700">${data.npc.narrative}</p>
+                        </div>
+                    </div>
+                `;
+                modal.classList.remove('hidden');
+                setTimeout(() => modal.classList.remove('opacity-0'), 10);
+                document.getElementById('closeModal').addEventListener('click', hideModal);
+            };
+
+            const hideModal = () => {
+                modal.classList.add('opacity-0');
+                setTimeout(() => modal.classList.add('hidden'), 250);
+            };
+
+            const initCharts = () => {
+                const processChartData = (key) => {
+                    const counts = cityData.reduce((acc, item) => {
+                        const value = item[key] || item.npc[key];
+                        acc[value] = (acc[value] || 0) + 1;
+                        return acc;
+                    }, {});
+                    return {
+                        labels: Object.keys(counts),
+                        data: Object.values(counts)
+                    };
+                };
+
+                const chartColors = {
+                    pie: ['#a16207', '#ca8a04', '#eab308', '#facc15', '#fde047', '#fefce8'],
+                    bar: '#a16207'
+                };
+                
+                const conditionData = processChartData('condition');
+                new Chart(document.getElementById('conditionChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: conditionData.labels,
+                        datasets: [{ data: conditionData.data, backgroundColor: chartColors.pie, borderWidth: 2, borderColor: '#f5f5f4' }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                });
+
+                const profitabilityData = processChartData('profitability');
+                new Chart(document.getElementById('profitabilityChart'), {
+                    type: 'pie',
+                    data: {
+                        labels: profitabilityData.labels,
+                        datasets: [{ data: profitabilityData.data, backgroundColor: chartColors.pie, borderWidth: 2, borderColor: '#f5f5f4' }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                });
+                
+                const objectivesData = processChartData('objective');
+                new Chart(document.getElementById('objectivesChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: objectivesData.labels,
+                        datasets: [{ label: 'Liczba postaci', data: objectivesData.data, backgroundColor: chartColors.bar }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } }
+                });
+
+                const meansData = processChartData('means');
+                new Chart(document.getElementById('meansChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: meansData.labels,
+                        datasets: [{ label: 'Liczba postaci', data: meansData.data, backgroundColor: chartColors.bar }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } }
+                });
+            };
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    navButtons.forEach(btn => btn.classList.remove('nav-active'));
+                    button.classList.add('nav-active');
+                    
+                    contentSections.forEach(section => section.classList.add('hidden'));
+                    document.getElementById(button.dataset.section).classList.remove('hidden');
+                });
+            });
+
+            searchInput.addEventListener('keyup', filterData);
+            conditionFilter.addEventListener('change', filterData);
+            profitabilityFilter.addEventListener('change', filterData);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) hideModal();
+            });
+
+            populateFilters();
+            renderLocations(cityData);
+            initCharts();
+        });
+    </script>
+</body>
+</html>
